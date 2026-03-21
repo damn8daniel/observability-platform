@@ -1,0 +1,41 @@
+server:
+  http_addr: ":8080"
+  grpc_addr: ":9090"
+
+grpc:
+  max_recv_msg_size: 16777216  # 16MB
+  max_send_msg_size: 16777216
+
+clickhouse:
+  addrs:
+    - "clickhouse:9000"
+  database: "observability"
+  username: "default"
+  password: ""
+
+prometheus:
+  scrape_interval: 15s
+  listen_addr: ":9091"
+
+alerting:
+  evaluation_interval: 30s
+  channels:
+    - name: default-webhook
+      type: webhook
+      config:
+        url: "http://localhost:9095/webhook"
+    # - name: slack-alerts
+    #   type: slack
+    #   config:
+    #     webhook_url: "https://hooks.slack.com/services/..."
+
+retention:
+  logs_ttl: 720h      # 30 days
+  traces_ttl: 168h    # 7 days
+  metrics_ttl: 2160h  # 90 days
+  cleanup_interval: 1h
+
+tenancy:
+  enabled: false
+  header_name: "X-Tenant-ID"
+  default_tenant: "default"

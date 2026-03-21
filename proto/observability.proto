@@ -1,0 +1,120 @@
+syntax = "proto3";
+
+package observability.v1;
+
+option go_package = "github.com/damn8daniel/observability-platform/proto/gen;observabilitypb";
+
+import "google/protobuf/timestamp.proto";
+
+// --- Log Ingestion ---
+
+service LogIngestionService {
+  rpc IngestLogs(IngestLogsRequest) returns (IngestLogsResponse);
+  rpc StreamLogs(stream LogRecord) returns (IngestLogsResponse);
+  rpc TailLogs(TailLogsRequest) returns (stream LogRecord);
+}
+
+message IngestLogsRequest {
+  repeated LogRecord logs = 1;
+}
+
+message IngestLogsResponse {
+  int64 accepted = 1;
+  int64 rejected = 2;
+  repeated string errors = 3;
+}
+
+message LogRecord {
+  string id = 1;
+  string tenant_id = 2;
+  google.protobuf.Timestamp timestamp = 3;
+  string level = 4;
+  string service = 5;
+  string message = 6;
+  string trace_id = 7;
+  string span_id = 8;
+  map<string, string> attributes = 9;
+}
+
+message TailLogsRequest {
+  string tenant_id = 1;
+  string service = 2;
+  string level = 3;
+  string query = 4;
+}
+
+// --- Trace Ingestion ---
+
+service TraceIngestionService {
+  rpc IngestSpans(IngestSpansRequest) returns (IngestSpansResponse);
+  rpc StreamSpans(stream SpanRecord) returns (IngestSpansResponse);
+}
+
+message IngestSpansRequest {
+  repeated SpanRecord spans = 1;
+}
+
+message IngestSpansResponse {
+  int64 accepted = 1;
+  int64 rejected = 2;
+  repeated string errors = 3;
+}
+
+message SpanRecord {
+  string trace_id = 1;
+  string span_id = 2;
+  string parent_span_id = 3;
+  string tenant_id = 4;
+  string service = 5;
+  string operation = 6;
+  google.protobuf.Timestamp start_time = 7;
+  google.protobuf.Timestamp end_time = 8;
+  int64 duration_ns = 9;
+  SpanStatus status = 10;
+  map<string, string> attributes = 11;
+  repeated SpanEvent events = 12;
+}
+
+enum SpanStatus {
+  SPAN_STATUS_UNSET = 0;
+  SPAN_STATUS_OK = 1;
+  SPAN_STATUS_ERROR = 2;
+}
+
+message SpanEvent {
+  string name = 1;
+  google.protobuf.Timestamp timestamp = 2;
+  map<string, string> attributes = 3;
+}
+
+// --- Metrics Ingestion ---
+
+service MetricsIngestionService {
+  rpc PushMetrics(PushMetricsRequest) returns (PushMetricsResponse);
+  rpc StreamMetrics(stream MetricRecord) returns (PushMetricsResponse);
+}
+
+message PushMetricsRequest {
+  repeated MetricRecord metrics = 1;
+}
+
+message PushMetricsResponse {
+  int64 accepted = 1;
+  int64 rejected = 2;
+}
+
+message MetricRecord {
+  string tenant_id = 1;
+  string name = 2;
+  double value = 3;
+  google.protobuf.Timestamp timestamp = 4;
+  map<string, string> labels = 5;
+  MetricType type = 6;
+}
+
+enum MetricType {
+  METRIC_TYPE_GAUGE = 0;
+  METRIC_TYPE_COUNTER = 1;
+  METRIC_TYPE_HISTOGRAM = 2;
+  METRIC_TYPE_SUMMARY = 3;
+}

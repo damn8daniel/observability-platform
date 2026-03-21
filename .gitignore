@@ -1,0 +1,12 @@
+bin/
+*.exe
+*.test
+*.out
+coverage.html
+coverage.out
+.env
+*.log
+vendor/
+node_modules/
+web/dashboard/build/
+.DS_Store

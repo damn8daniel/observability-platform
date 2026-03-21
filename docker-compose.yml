@@ -1,0 +1,58 @@
+version: "3.8"
+
+services:
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.1
+    ports:
+      - "8123:8123"   # HTTP
+      - "9000:9000"   # Native
+    volumes:
+      - clickhouse-data:/var/lib/clickhouse
+    environment:
+      CLICKHOUSE_DB: observability
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+    healthcheck:
+      test: ["CMD", "clickhouse-client", "--query", "SELECT 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+
+  prometheus:
+    image: prom/prometheus:v2.49.1
+    ports:
+      - "9091:9090"
+    volumes:
+      - ./deployments/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    depends_on:
+      - observability-platform
+
+  observability-platform:
+    build: .
+    ports:
+      - "8080:8080"   # HTTP API
+      - "9090:9090"   # gRPC
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+    environment:
+      - LOG_LEVEL=info
+    volumes:
+      - ./config.yaml:/app/config.yaml
+
+  dashboard:
+    build:
+      context: ./web/dashboard
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    depends_on:
+      - observability-platform
+
+volumes:
+  clickhouse-data:
+  prometheus-data:
